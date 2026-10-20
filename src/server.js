@@ -1,19 +1,22 @@
 #!/usr/bin/env node
-// gcal-lite-mcp: Google Calendar for agents, to read and to make events.
-// `npx gcal-lite-mcp auth` signs in once; run without arguments it is an
-// MCP server on stdio.
+// gcal-lite-mcp: Google Calendar for agents, to read and to make events. See README.md for signing in;
+// run with --account <name> it is an MCP server on stdio.
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
-import { signIn } from './auth.js'
+import { command, signIn, useAccount } from './auth.js'
 import { calendars, createEvent, events, getEvent } from './calendar.js'
 
 const VERSION = '0.1.0'
 
-if (process.argv[2] === 'auth') {
-  signIn().then(() => process.exit(0), (error) => { console.error(error.message); process.exit(1) })
+const cli = command(process.argv.slice(2))
+const fail = (error) => { console.error(error.message); process.exit(1) }
+
+if (cli.auth) {
+  await signIn(cli).then(() => process.exit(0), fail)
 } else {
+  await useAccount(cli.account).catch(fail)
   const server = new McpServer({ name: 'gcal-lite-mcp', version: VERSION })
   const answer = (fn) => async (args) => {
     try {
